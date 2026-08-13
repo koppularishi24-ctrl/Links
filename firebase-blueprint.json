@@ -1,0 +1,27 @@
+{
+  "entities": {
+    "Vault": {
+      "title": "Vault",
+      "description": "Encrypted user vault data",
+      "type": "object",
+      "properties": {
+        "payload": {
+          "type": "string",
+          "description": "AES encrypted JSON string containing categories and links"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Last sync time"
+        }
+      },
+      "required": ["payload", "updatedAt"]
+    }
+  },
+  "firestore": {
+    "/vaults/{userId}": {
+      "schema": "Vault",
+      "description": "The private vault for an individual user"
+    }
+  }
+}

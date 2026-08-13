@@ -1,0 +1,59 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 0. Global Safety Net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // --- Helpers ---
+    
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // --- Vault Validation ---
+    
+    function isValidVault(data) {
+      return data.keys().hasAll(['payload', 'updatedAt']) 
+        && data.keys().size() == 2
+        && data.payload is string 
+        && data.payload.size() <= 1048576 // 1MB limit for payload
+        && data.updatedAt is string;
+    }
+
+    // --- Collection Routes ---
+
+    match /vaults/{userId} {
+      allow get: if isOwner(userId);
+      
+      allow create: if isOwner(userId) 
+        && isValidId(userId)
+        && isValidVault(incoming());
+        
+      allow update: if isOwner(userId) 
+        && isValidVault(incoming())
+        && (
+          incoming().diff(existing()).affectedKeys().hasOnly(['payload', 'updatedAt'])
+        );
+
+      allow delete: if false; // Users shouldn't delete their vault directly for safety, or we can allow it
+    }
+  }
+}
