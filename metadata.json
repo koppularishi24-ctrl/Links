@@ -1,6 +1,8 @@
 {
   "name": "Link Vault",
-  "description": "A premium, offline-only productivity tool for storing, categorized, and fast-launching links.",
+  "description": "A premium productivity tool for storing, categorizing, fast-launching, and exporting links.",
   "requestFramePermissions": [],
-  "majorCapabilities": []
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
 }
