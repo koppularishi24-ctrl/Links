@@ -365,6 +365,29 @@ export default function App() {
     setIsSettingsOpen(false);
   };
 
+  const handleDownloadText = () => {
+    if (links.length === 0) {
+      setAlertDialog({ message: 'No links found in your vault to download.' });
+      return;
+    }
+
+    const textContent = links
+      .map(l => l.url.trim())
+      .filter(Boolean)
+      .join('\n');
+
+    const blob = new Blob([textContent], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'contentisprivate.txt';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    setIsSettingsOpen(false);
+  };
+
   const handleLinkLocalFile = async () => {
     try {
       // @ts-ignore - File System Access API
@@ -668,8 +691,19 @@ export default function App() {
           </div>
 
           <div className="flex items-center gap-3 ml-auto shrink-0">
+             <button 
+               id="download-links-txt-btn"
+               onClick={handleDownloadText}
+               className="flex items-center gap-2 px-3 py-2 rounded-lg bg-[var(--color-card)] hover:bg-[#262629] text-[var(--color-text-p)] hover:text-white transition-colors border border-[var(--color-border)] text-[13px] font-medium"
+               title="Download all links as contentisprivate.txt"
+             >
+               <Download className="w-4 h-4 text-[var(--color-accent)]" />
+               <span className="hidden sm:inline">Download Links (.txt)</span>
+             </button>
+
              <div className="relative">
                <button 
+                 id="settings-btn"
                  onClick={() => setIsSettingsOpen(!isSettingsOpen)}
                  className="p-2.5 rounded-lg bg-[var(--color-card)] hover:bg-[#262629] text-[var(--color-text-s)] hover:text-white transition-colors border border-[var(--color-border)]"
                  title="Settings & Data"
@@ -685,9 +719,13 @@ export default function App() {
                        initial={{ opacity: 0, scale: 0.95, y: 10 }}
                        animate={{ opacity: 1, scale: 1, y: 0 }}
                        exit={{ opacity: 0, scale: 0.95, y: 10 }}
-                       className="absolute right-0 top-full mt-2 w-48 bg-[var(--color-card)] border border-[var(--color-border)] rounded-xl shadow-2xl z-50 overflow-hidden text-[13px]"
+                       className="absolute right-0 top-full mt-2 w-56 bg-[var(--color-card)] border border-[var(--color-border)] rounded-xl shadow-2xl z-50 overflow-hidden text-[13px]"
                      >
-                       <button onClick={handleExport} className="w-full flex items-center gap-2 px-4 py-3 hover:bg-[var(--color-border)] text-left transition-colors">
+                       <button onClick={handleDownloadText} className="w-full flex items-center gap-2 px-4 py-3 hover:bg-[var(--color-border)] text-left transition-colors text-[var(--color-accent)] font-medium">
+                         <Download className="w-4 h-4 text-[var(--color-accent)]" />
+                         Download Links (.txt)
+                       </button>
+                       <button onClick={handleExport} className="w-full flex items-center gap-2 px-4 py-3 hover:bg-[var(--color-border)] text-left transition-colors border-t border-[var(--color-border)]">
                          <Download className="w-4 h-4 text-[var(--color-text-s)]" />
                          Export JSON
                        </button>
@@ -879,6 +917,19 @@ export default function App() {
 
 // Subcomponents
 
+interface CategorySectionProps {
+  key?: React.Key;
+  category: Category; 
+  onToggle: () => void; 
+  onOpenAll: () => void; 
+  links: LinkItem[];
+  searchQuery: string;
+  onEdit: (link: LinkItem) => void;
+  onDelete: (id: string) => void;
+  onEditCategory: () => void;
+  onDeleteCategory: () => void;
+}
+
 function CategorySection({ 
   category, 
   onToggle, 
@@ -889,17 +940,7 @@ function CategorySection({
   onDelete,
   onEditCategory,
   onDeleteCategory
-}: { 
-  category: Category; 
-  onToggle: () => void; 
-  onOpenAll: () => void; 
-  links: LinkItem[];
-  searchQuery: string;
-  onEdit: (link: LinkItem) => void;
-  onDelete: (id: string) => void;
-  onEditCategory: () => void;
-  onDeleteCategory: () => void;
-}) {
+}: CategorySectionProps) {
   
   const filteredLinks = useMemo(() => {
     if (!searchQuery.trim()) return links;
@@ -970,7 +1011,14 @@ function CategorySection({
   );
 }
 
-function LinkRow({ link, onEdit, onDelete }: { link: LinkItem; onEdit: () => void; onDelete: () => void; }) {
+interface LinkRowProps {
+  key?: React.Key;
+  link: LinkItem;
+  onEdit: () => void;
+  onDelete: () => void;
+}
+
+function LinkRow({ link, onEdit, onDelete }: LinkRowProps) {
   // Try to extract hostname for display
   let hostname = link.url;
   try {
